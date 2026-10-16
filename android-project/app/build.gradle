@@ -6,8 +6,11 @@ def buildWithCMake = project.hasProperty('BUILD_WITH_CMAKE');
 
 android {
     namespace = "org.libsdl.app"
-    compileSdkVersion 35
-    ndkVersion = "28.2.13676358"
+    compileSdk {
+        version = release(37) { minorApiLevel = 2 }
+    }
+    ndkVersion = "30.0.16248370"
+    buildToolsVersion = "37.0.0"
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 35
@@ -29,12 +32,8 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-    }
-    applicationVariants.all { variant ->
-        tasks["merge${variant.name.capitalize()}Assets"]
-            .dependsOn("externalNativeBuild${variant.name.capitalize()}")
     }
     if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
         sourceSets.main {
@@ -55,6 +54,17 @@ android {
     }
     lint {
         abortOnError = false
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        def variantName = variant.name.capitalize()
+        tasks.configureEach { task ->
+            if (task.name == "merge${variantName}Assets" && !project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
+                task.dependsOn("externalNativeBuild${variantName}")
+            }
+        }
     }
 }
 
